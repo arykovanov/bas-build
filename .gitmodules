@@ -1,0 +1,15 @@
+[submodule "BAS-Resources"]
+	path = BAS-Resources
+	url = git@github.com:RealTimeLogic/BAS-Resources.git
+[submodule "BAS"]
+	path = BAS
+	url = git@github.com:RealTimeLogic/BAS.git
+[submodule "CBOR"]
+	path = CBOR
+	url = https://github.com/spc476/CBOR.git
+[submodule "LPeg"]
+	path = LPeg
+	url = https://github.com/roberto-ieru/LPeg.git
+[submodule "lua-protobuf"]
+	path = lua-protobuf
+	url = https://github.com/surfskidude/lua-protobuf
