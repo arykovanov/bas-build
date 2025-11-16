@@ -1,0 +1,153 @@
+name: Build and Push Docker image (Kaniko)
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    tags:
+      - "v*.*.*"
+  pull_request:
+    branches: [ "main", "master" ]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    environment: secrets
+    name: Kaniko build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Init submodules
+        run: |
+          git submodule update --init --recursive
+
+      - name: Build binaries
+        run: |
+          make all
+
+      - name: Store build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mako-binaries
+          if-no-files-found: error
+          path: |
+            BAS/mako
+            BAS/mako.zip
+
+      - name: Set up tags
+        id: meta
+        run: |
+          SHA_TAG=${GITHUB_SHA::7}
+          echo "sha_tag=$SHA_TAG" >> "$GITHUB_OUTPUT"
+          # latest only on default branch
+          if [[ "${GITHUB_EVENT_NAME}" == "push" && "${{ github.ref }}" == "refs/heads/${{ github.event.repository.default_branch }}" ]]; then
+            echo "latest_tag=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "latest_tag=" >> "$GITHUB_OUTPUT"
+          fi
+          # version tag on semver tag push
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            echo "version_tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version_tag=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Prepare registry auth for Kaniko
+        run: |
+          mkdir -p "${RUNNER_TEMP}/kaniko"
+          CONFIG="${RUNNER_TEMP}/kaniko/config.json"
+          # Determine which credentials to use
+          # Docker Hub requires this exact auth host
+          # Write docker config
+
+          if [[ -z "${DOCKER_REGISTRY_PASSWORD}" ]]; then
+            echo "DOCKER_REGISTRY_PASSWORD empty!"
+            exit 1
+          fi
+          if [[ -z "${DOCKER_REGISTRY_USER}" ]]; then
+            echo "DOCKER_REGISTRY_USER empty!"
+            exit 1
+          fi
+          if [[ -z "${DOCKER_REGISTRY_HOST}" ]]; then
+            echo "DOCKER_REGISTRY_HOST empty!"
+            exit 1
+          fi
+          
+          cat > "$CONFIG" <<EOF
+          {
+            "auths": {
+              "${DOCKER_REGISTRY_HOST}": {
+                "username": "${DOCKER_REGISTRY_USER}",
+                "password": "${DOCKER_REGISTRY_PASSWORD}"
+              }
+            }
+          }
+          EOF
+        env:
+          DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+          DOCKER_REGISTRY_USER: ${{ secrets.DOCKER_REGISTRY_USER }}
+          DOCKER_REGISTRY_HOST: ${{ vars.DOCKER_REGISTRY_HOST }}
+
+      - name: Compute destinations and cache repo
+        id: dest
+        shell: bash
+        run: |
+
+          if [[ -z "${DOCKER_REGISTRY_HOST}" ]]; then
+            echo "DOCKER_REGISTRY_HOST empty!"
+            exit 1
+          fi
+          if [[ -z "${DOCKER_REGISTRY_PROJECT}" ]]; then
+            echo "DOCKER_REGISTRY_PROJECT empty!"
+            exit 1
+          fi
+          if [[ -z "${DOCKER_IMAGE_NAME}" ]]; then
+            echo "DOCKER_IMAGE_NAME empty!"
+            exit 1
+          fi
+
+          IMAGE="${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_PROJECT}/${DOCKER_IMAGE_NAME}"
+          DESTS="--destination ${IMAGE}:${{ steps.meta.outputs.sha_tag }}"
+          echo "dests=$DESTS" >> "$GITHUB_OUTPUT"
+          # cache repo alongside image (suffix -cache)
+          echo "cache_repo=${IMAGE}-cache" >> "$GITHUB_OUTPUT"
+        env:
+          DOCKER_REGISTRY_HOST: ${{ vars.DOCKER_REGISTRY_HOST }}
+          DOCKER_REGISTRY_PROJECT: ${{ vars.DOCKER_REGISTRY_PROJECT }}
+          DOCKER_IMAGE_NAME: ${{ vars.DOCKER_IMAGE_NAME }}
+
+      - name: Kaniko build (PR - no push)
+        if: github.event_name == 'pull_request'
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}":/workspace \
+            -v "${RUNNER_TEMP}/kaniko":/kaniko/.docker \
+            -e DOCKER_CONFIG=/kaniko/.docker \
+            gcr.io/kaniko-project/executor:latest \
+            --dockerfile /workspace/Dockerfile \
+            --context dir:///workspace/BAS \
+            --no-push \
+            --verbosity info \
+            --cache=true \
+            --cache-ttl 168h \
+            --cache-repo "${{ steps.dest.outputs.cache_repo }}"
+
+      - name: Kaniko build and push
+        if: github.event_name != 'pull_request'
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}":/workspace \
+            -v "${RUNNER_TEMP}/kaniko":/kaniko/.docker \
+            -e DOCKER_CONFIG=/kaniko/.docker \
+            gcr.io/kaniko-project/executor:latest \
+            --dockerfile /workspace/Dockerfile \
+            --context dir:///workspace/BAS \
+            --verbosity info \
+            --cache=true \
+            --cache-ttl 168h \
+            --cache-repo "${{ steps.dest.outputs.cache_repo }}" \
+            ${{ steps.dest.outputs.dests }}
