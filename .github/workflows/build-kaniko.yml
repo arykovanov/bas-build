@@ -2,11 +2,11 @@ name: Build and Push Docker image (Kaniko)
 
 on:
   push:
-    branches: [ "main", "master" ]
+    # branches: [ "main", "master" ]
     tags:
       - "v*.*.*"
-  pull_request:
-    branches: [ "main", "master" ]
+  # pull_request:
+  #   branches: [ "main", "master" ]
 
 permissions:
   contents: read
@@ -42,6 +42,7 @@ jobs:
         id: meta
         run: |
           SHA_TAG=${GITHUB_SHA::7}
+          VERSION=$(make mako-version)
           echo "sha_tag=$SHA_TAG" >> "$GITHUB_OUTPUT"
           # latest only on default branch
           if [[ "${GITHUB_EVENT_NAME}" == "push" && "${{ github.ref }}" == "refs/heads/${{ github.event.repository.default_branch }}" ]]; then
@@ -49,6 +50,7 @@ jobs:
           else
             echo "latest_tag=" >> "$GITHUB_OUTPUT"
           fi
+          echo "mako_version=${VERSION}" >> "$GITHUB_OUTPUT"
           # version tag on semver tag push
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             echo "version_tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
@@ -110,8 +112,15 @@ jobs:
             exit 1
           fi
 
-          IMAGE="${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_PROJECT}/${DOCKER_IMAGE_NAME}"
-          DESTS="--destination ${IMAGE}:${{ steps.meta.outputs.sha_tag }}"
+          IMAGE="${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_PROJECT}/${DOCKER_IMAGE_NAME}:${{ steps.meta.outputs.mako_version }}"
+          if [[ "${{ steps.meta.branch }}" != "main" ]]; then
+            # branch is not main, add sha tag
+            IMAGE="${IMAGE}-${{ steps.meta.outputs.sha_tag }}"
+            DESTS="--destination ${IMAGE}-${{ steps.meta.outputs.sha_tag }}"
+          else
+            DESTS="--destination ${IMAGE} --destination ${IMAGE}-${{ steps.meta.outputs.sha_tag }}"
+          fi
+
           echo "dests=$DESTS" >> "$GITHUB_OUTPUT"
           # cache repo alongside image (suffix -cache)
           echo "cache_repo=${IMAGE}-cache" >> "$GITHUB_OUTPUT"
@@ -157,7 +166,7 @@ jobs:
         if: always()
         run: |
           echo "### Docker Image" >> "$GITHUB_STEP_SUMMARY"
-          echo "\`${{ steps.dest.outputs.image }}:${{ steps.meta.outputs.sha_tag }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`${{ steps.dest.outputs.image }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Pull with:" >> "$GITHUB_STEP_SUMMARY"
-          echo "\`docker pull ${{ steps.dest.outputs.image }}:${{ steps.meta.outputs.sha_tag }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`docker pull ${{ steps.dest.outputs.image }}\`" >> "$GITHUB_STEP_SUMMARY"
