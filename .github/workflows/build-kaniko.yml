@@ -115,6 +115,7 @@ jobs:
           echo "dests=$DESTS" >> "$GITHUB_OUTPUT"
           # cache repo alongside image (suffix -cache)
           echo "cache_repo=${IMAGE}-cache" >> "$GITHUB_OUTPUT"
+          echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
         env:
           DOCKER_REGISTRY_HOST: ${{ vars.DOCKER_REGISTRY_HOST }}
           DOCKER_REGISTRY_PROJECT: ${{ vars.DOCKER_REGISTRY_PROJECT }}
@@ -151,3 +152,12 @@ jobs:
             --cache-ttl 168h \
             --cache-repo "${{ steps.dest.outputs.cache_repo }}" \
             ${{ steps.dest.outputs.dests }}
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Docker Image" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`${{ steps.dest.outputs.image }}:${{ steps.meta.outputs.sha_tag }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Pull with:" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`docker pull ${{ steps.dest.outputs.image }}:${{ steps.meta.outputs.sha_tag }}\`" >> "$GITHUB_STEP_SUMMARY"
