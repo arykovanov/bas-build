@@ -3,9 +3,21 @@ MAKO_ZIP=BAS/mako.zip
 VERSION=$(shell cat VERSION)
 VERSION_MAKO=$(shell grep '^#define MAKO_VER' BAS/examples/MakoServer/src/MakoVer.h | awk '{print $$3}' | tr -d '"')
 
+makefile_path = $(abspath $(lastword $(MAKEFILE_LIST)))
+TOP_DIR=$(patsubst %/,%,$(dir $(makefile_path)))
+BIN_DIR=${TOP_DIR}/bin
+TMP_DIR=${TOP_DIR}/.tmp
+
+
 .PHONY: all mako mako-docker mako-docker-run
 
 all: $(MAKO) $(MAKO_ZIP)
+
+${BIN_DIR}:
+	mkdir ${BIN_DIR}
+
+$(TMP_DIR):
+	mkdir $(TMP_DIR)
 
 dist: mako-docker
 
@@ -18,6 +30,19 @@ clean:
 
 dist-clean:
 	docker rmi mako mako:${VERSION_MAKO}
+
+dist-deb: mako-deb
+MAKO_DEB_DIR = $(TMP_DIR)/mako-${VERSION_MAKO}
+MAKO_DST_DIR = usr/lib/realtimelogic
+
+mako-deb: ${BIN_DIR} ${TMP_DIR} $(MAKO) $(MAKO_ZIP)
+	mkdir -p $(MAKO_DEB_DIR) $(MAKO_DEB_DIR)/$(MAKO_DST_DIR)
+	cp -p $(MAKO_ZIP) $(MAKO_DEB_DIR)/$(MAKO_DST_DIR)
+	cp -p ${MAKO} $(MAKO_DEB_DIR)/$(MAKO_DST_DIR)
+	cp -r $(TOP_DIR)/dist/deb/* $(MAKO_DEB_DIR)
+	echo "Version: ${VERSION_MAKO}" >> $(MAKO_DEB_DIR)/DEBIAN/control
+	cd $(TMP_DIR) && dpkg-deb --build $(MAKO_DEB_DIR) && cd -
+	cp $(TMP_DIR)/mako-${VERSION_MAKO}.deb $(BIN_DIR)
 
 mako: $(MAKO) $(MAKO_ZIP)
 

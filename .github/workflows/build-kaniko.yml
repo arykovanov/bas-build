@@ -29,6 +29,10 @@ jobs:
         run: |
           make all
 
+      - name: Build debian package
+        run: |
+          make mako-deb
+
       - name: Store build artifacts
         uses: actions/upload-artifact@v4
         with:
