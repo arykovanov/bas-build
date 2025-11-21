@@ -1,4 +1,4 @@
-name: Build and Push Docker image (Kaniko)
+name: Build binaries
 
 on:
   workflow_dispatch:
@@ -17,17 +17,9 @@ permissions:
 jobs:
   build:
     environment: secrets
-    name: Kaniko build
+    name: Build mako binaries
     runs-on: bas-build
 
-    container:
-      image: ${{ vars.DOCKER_REGISTRY_HOST }}/internal/rtl-build@sha256:3c4c3338f0c298eb70e7547e9ca415ef162fdd1d8b5455fba0a1703204db6cf2
-      credentials:
-        username: ${{ secrets.DOCKER_REGISTRY_USER }}
-        password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
-      # if your image has a custom entrypoint that interferes, clear it:
-      options: --entrypoint "" -v /var/run/docker.sock:/var/run/docker.sock
-      
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,6 +27,15 @@ jobs:
       - name: Init submodules
         run: |
           git submodule update --init --recursive
+
+      - name: Set up tags
+        id: meta
+        run: |
+          SHA_TAG=${GITHUB_SHA::7}
+          VERSION=$(make mako-version)
+          echo "MAKO_VERSION=$VERSION"
+          echo "sha_tag=$SHA_TAG" >> "$GITHUB_OUTPUT"
+          echo "mako_version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Build binaries
         run: |
@@ -52,26 +53,7 @@ jobs:
           path: |
             BAS/mako
             BAS/mako.zip
-
-      - name: Set up tags
-        id: meta
-        run: |
-          SHA_TAG=${GITHUB_SHA::7}
-          VERSION=$(make mako-version)
-          echo "sha_tag=$SHA_TAG" >> "$GITHUB_OUTPUT"
-          # latest only on default branch
-          if [[ "${GITHUB_EVENT_NAME}" == "push" && "${{ github.ref }}" == "refs/heads/${{ github.event.repository.default_branch }}" ]]; then
-            echo "latest_tag=latest" >> "$GITHUB_OUTPUT"
-          else
-            echo "latest_tag=" >> "$GITHUB_OUTPUT"
-          fi
-          echo "mako_version=${VERSION}" >> "$GITHUB_OUTPUT"
-          # version tag on semver tag push
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            echo "version_tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
-          else
-            echo "version_tag=" >> "$GITHUB_OUTPUT"
-          fi
+            mako-*.deb
 
       - name: Prepare registry auth for Kaniko
         run: |
@@ -131,7 +113,7 @@ jobs:
           if [[ "${{ steps.meta.branch }}" != "main" ]]; then
             # branch is not main, add sha tag
             IMAGE="${IMAGE}-${{ steps.meta.outputs.sha_tag }}"
-            DESTS="--destination ${IMAGE}-${{ steps.meta.outputs.sha_tag }}"
+            DESTS="--destination ${IMAGE}"
           else
             DESTS="--destination ${IMAGE} --destination ${IMAGE}-${{ steps.meta.outputs.sha_tag }}"
           fi
