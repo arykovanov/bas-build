@@ -30,12 +30,17 @@ dist-clean:
 dist-deb: mako-deb
 MAKO_DEB_DIR = $(TMP_DIR)/mako-${VERSION_MAKO}
 MAKO_DST_DIR = usr/lib/realtimelogic
+MAKO_INCLUDE_DIR = usr/include/realtimelogic
 
 mako-deb: ${TMP_DIR} $(MAKO) $(MAKO_ZIP)
 	mkdir -p $(MAKO_DEB_DIR) $(MAKO_DEB_DIR)/$(MAKO_DST_DIR)
+	mkdir -p $(MAKO_DEB_DIR)/$(MAKO_INCLUDE_DIR)
+	mkdir -p $(MAKO_DEB_DIR)/usr/lib/pkgconfig
+	cp -r $(TOP_DIR)/BAS/inc/* $(MAKO_DEB_DIR)/$(MAKO_INCLUDE_DIR)
 	cp -p $(MAKO_ZIP) $(MAKO_DEB_DIR)/$(MAKO_DST_DIR)
 	cp -p ${MAKO} $(MAKO_DEB_DIR)/$(MAKO_DST_DIR)
 	cp -r $(TOP_DIR)/dist/deb/* $(MAKO_DEB_DIR)
+	sed 's/@VERSION_MAKO@/$(VERSION_MAKO)/g' $(TOP_DIR)/dist/deb/usr/lib/pkgconfig/mako.pc > $(MAKO_DEB_DIR)/usr/lib/pkgconfig/mako.pc
 	echo "Version: ${VERSION_MAKO}" >> $(MAKO_DEB_DIR)/DEBIAN/control
 	cd $(TMP_DIR) && dpkg-deb --build $(MAKO_DEB_DIR) && cd -
 	cp $(TMP_DIR)/mako-${VERSION_MAKO}.deb .

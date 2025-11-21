@@ -1,0 +1,10 @@
+prefix=/usr
+libdir=${prefix}/lib
+includedir=${prefix}/include/realtimelogic
+
+Name: mako
+Description: Mako Server - Embedded web server with Lua support
+Version: @VERSION_MAKO@
+Cflags: -I${includedir} -I${includedir}/arch/Posix -DNDEBUG -DMAKO -DUSE_EMBEDDED_ZIP=0 -DLUA_USE_LINUX -DBA_FILESIZE64 -DUSE_LUAINTF=1 -DUSE_DBGMON=1 -DUSE_OPCUA=1
+Libs: -lpthread -lm -ldl
+
