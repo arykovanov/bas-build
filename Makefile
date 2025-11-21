@@ -22,6 +22,7 @@ clean:
 	rm -f BAS/*.o
 	rm -f BAS/examples/MakoServer/src/NewEncryptionKey.h
 	rm -f BAS/src/shell.c BAS/src/sqlite3*
+	rm -f mako-*.deb mako-dev-*.deb
 	docker rmi mako -f
 
 dist-clean:
@@ -29,21 +30,29 @@ dist-clean:
 
 dist-deb: mako-deb
 MAKO_DEB_DIR = $(TMP_DIR)/mako-${VERSION_MAKO}
+MAKO_DEV_DEB_DIR = $(TMP_DIR)/mako-dev-${VERSION_MAKO}
 MAKO_DST_DIR = usr/lib/realtimelogic
 MAKO_INCLUDE_DIR = usr/include/realtimelogic
 
 mako-deb: ${TMP_DIR} $(MAKO) $(MAKO_ZIP)
+	@echo "Building mako runtime package..."
 	mkdir -p $(MAKO_DEB_DIR) $(MAKO_DEB_DIR)/$(MAKO_DST_DIR)
-	mkdir -p $(MAKO_DEB_DIR)/$(MAKO_INCLUDE_DIR)
-	mkdir -p $(MAKO_DEB_DIR)/usr/lib/pkgconfig
-	cp -r $(TOP_DIR)/BAS/inc/* $(MAKO_DEB_DIR)/$(MAKO_INCLUDE_DIR)
 	cp -p $(MAKO_ZIP) $(MAKO_DEB_DIR)/$(MAKO_DST_DIR)
 	cp -p ${MAKO} $(MAKO_DEB_DIR)/$(MAKO_DST_DIR)
-	cp -r $(TOP_DIR)/dist/deb/* $(MAKO_DEB_DIR)
-	sed 's/@VERSION_MAKO@/$(VERSION_MAKO)/g' $(TOP_DIR)/dist/deb/usr/lib/pkgconfig/mako.pc > $(MAKO_DEB_DIR)/usr/lib/pkgconfig/mako.pc
-	echo "Version: ${VERSION_MAKO}" >> $(MAKO_DEB_DIR)/DEBIAN/control
-	cd $(TMP_DIR) && dpkg-deb --build $(MAKO_DEB_DIR) && cd -
+	cp -r $(TOP_DIR)/dist/deb/mako/* $(MAKO_DEB_DIR)
+	sed -i '/^Package:/a Version: $(VERSION_MAKO)' $(MAKO_DEB_DIR)/DEBIAN/control
+	cd $(TMP_DIR) && dpkg-deb --build mako-${VERSION_MAKO} && cd -
 	cp $(TMP_DIR)/mako-${VERSION_MAKO}.deb .
+	@echo "Building mako-dev package..."
+	mkdir -p $(MAKO_DEV_DEB_DIR) $(MAKO_DEV_DEB_DIR)/$(MAKO_INCLUDE_DIR)
+	mkdir -p $(MAKO_DEV_DEB_DIR)/usr/lib/pkgconfig
+	cp -r $(TOP_DIR)/BAS/inc/* $(MAKO_DEV_DEB_DIR)/$(MAKO_INCLUDE_DIR)
+	cp -r $(TOP_DIR)/dist/deb/mako-dev/* $(MAKO_DEV_DEB_DIR)
+	sed 's/@VERSION_MAKO@/$(VERSION_MAKO)/g' $(TOP_DIR)/dist/deb/mako-dev/usr/lib/pkgconfig/mako.pc > $(MAKO_DEV_DEB_DIR)/usr/lib/pkgconfig/mako.pc
+	sed -i '/^Package:/a Version: $(VERSION_MAKO)' $(MAKO_DEV_DEB_DIR)/DEBIAN/control
+	sed -i 's/\$${binary:Version}/$(VERSION_MAKO)/g' $(MAKO_DEV_DEB_DIR)/DEBIAN/control
+	cd $(TMP_DIR) && dpkg-deb --build mako-dev-${VERSION_MAKO} && cd -
+	cp $(TMP_DIR)/mako-dev-${VERSION_MAKO}.deb .
 
 mako: $(MAKO) $(MAKO_ZIP)
 

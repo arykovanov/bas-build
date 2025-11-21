@@ -1,0 +1,11 @@
+[Unit]
+Description=Mako web service
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/lib/realtimelogic/mako -c /etc/realtimelogic/mako.conf
+
+[Install]
+WantedBy=multi-user.target

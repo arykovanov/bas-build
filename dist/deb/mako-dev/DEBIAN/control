@@ -1,0 +1,10 @@
+Package: mako-dev
+Architecture: amd64
+Essential: no
+Priority: optional
+Depends: mako (= ${binary:Version})
+Maintainer: Alexander Rykovanov <alexander@realtimelogic.com>
+Description: Mako web server development files
+ Development package containing header files and pkgconfig for compiling
+ Lua modules that use Mako's headers.
+
