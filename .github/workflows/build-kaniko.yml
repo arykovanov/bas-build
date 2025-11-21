@@ -1,12 +1,14 @@
 name: Build and Push Docker image (Kaniko)
 
 on:
+  workflow_dispatch:
+
   push:
-    # branches: [ "main", "master" ]
+    branches: [ "main", "master" ]
     tags:
       - "v*.*.*"
-  # pull_request:
-  #   branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
 
 permissions:
   contents: read
@@ -16,7 +18,16 @@ jobs:
   build:
     environment: secrets
     name: Kaniko build
-    runs-on: ubuntu-latest
+    runs-on: bas-build
+
+    container:
+      image: ${{ vars.DOCKER_REGISTRY_HOST }}/internal/rtl-build@sha256:3c4c3338f0c298eb70e7547e9ca415ef162fdd1d8b5455fba0a1703204db6cf2
+      credentials:
+        username: ${{ secrets.DOCKER_REGISTRY_USER }}
+        password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+      # if your image has a custom entrypoint that interferes, clear it:
+      options: --entrypoint "" -v /var/run/docker.sock:/var/run/docker.sock
+      
     steps:
       - name: Checkout
         uses: actions/checkout@v4
