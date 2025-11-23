@@ -4,9 +4,7 @@ on:
   workflow_dispatch:
 
   push:
-    branches: [ "main", "master" ]
-    tags:
-      - "v*.*.*"
+    branches: [ "*" ]
   pull_request:
     branches: [ "main", "master" ]
 
