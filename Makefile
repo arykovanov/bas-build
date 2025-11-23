@@ -12,7 +12,7 @@ TMP_DIR=${TOP_DIR}/.tmp
 
 .PHONY: all mako mako-docker mako-docker-run mako-deb mako-deb-dev
 
-all: $(MAKO) $(MAKO_ZIP)
+all: $(MAKO) $(MAKO_ZIP) libmako
 
 $(TMP_DIR):
 	mkdir $(TMP_DIR)
@@ -51,12 +51,16 @@ mako-deb: ${TMP_DIR} $(MAKO) $(MAKO_ZIP)
 	cd $(TMP_DIR) && dpkg-deb --build mako-${VERSION_MAKO} && cd -
 	cp $(TMP_DIR)/mako-${VERSION_MAKO}.deb .
 
-mako-deb-dev: ${TMP_DIR}
+mako-deb-dev: ${TMP_DIR} libmako
 	@echo "Building mako-dev package..."
 	mkdir -p $(MAKO_DEV_DEB_DIR) $(MAKO_DEV_DEB_DIR)/$(MAKO_INCLUDE_DIR)
 	mkdir -p $(MAKO_DEV_DEB_DIR)/usr/share/pkgconfig
 	cp -r $(TOP_DIR)/BAS/inc/* $(MAKO_DEV_DEB_DIR)/$(MAKO_INCLUDE_DIR)
 	cp -r $(TOP_DIR)/dist/deb/mako-dev/* $(MAKO_DEV_DEB_DIR)
+
+	mkdir -p $(MAKO_DEV_DEB_DIR)/usr/lib/realtimelogic
+	cp -p $(LIBMAKO_STATIC_MODULE) $(MAKO_DEV_DEB_DIR)/usr/lib/realtimelogic
+	
 	sed 's/@VERSION_MAKO@/$(VERSION_MAKO)/g' $(TOP_DIR)/dist/deb/mako-dev/usr/share/pkgconfig/mako.pc > $(MAKO_DEV_DEB_DIR)/usr/share/pkgconfig/mako.pc
 	sed -i '/^Package:/a Version: $(VERSION_MAKO)' $(MAKO_DEV_DEB_DIR)/DEBIAN/control
 	sed -i 's/\$${binary:Version}/$(VERSION_MAKO)/g' $(MAKO_DEV_DEB_DIR)/DEBIAN/control
@@ -64,6 +68,15 @@ mako-deb-dev: ${TMP_DIR}
 	cp $(TMP_DIR)/mako-dev-${VERSION_MAKO}.deb .
 
 mako: $(MAKO) $(MAKO_ZIP)
+
+.PHONY: libmako
+LIBMAKO_OBJECTS=$(wildcard $(TOP_DIR)/BAS/*.o)
+LIBMAKO_STATIC_MODULE=$(TOP_DIR)/BAS/libmako.a
+
+$(LIBMAKO_STATIC_MODULE): $(LIBMAKO_OBJECTS) mako
+	$(AR) rcs $(LIBMAKO_STATIC_MODULE) $(LIBMAKO_OBJECTS)
+
+libmako: $(LIBMAKO_STATIC_MODULE)
 
 $(MAKO) $(MAKO_ZIP):
 	if [ "$(USE_OPCUA)" -eq 0 ]; then \
@@ -77,7 +90,7 @@ $(MAKO) $(MAKO_ZIP):
 		fi ; \
 	fi
 
-	./LinuxBuild.sh
+	CFLAGS="-fPIC" ./LinuxBuild.sh
 
 	if [ "$(USE_OPCUA)" -eq 0 ]; then \
 		zip -d $(MAKO_ZIP) '.lua/opcua/*' ; \
