@@ -1,3 +1,5 @@
+USE_OPCUA ?= 0
+
 MAKO=BAS/mako
 MAKO_ZIP=BAS/mako.zip
 VERSION=$(shell cat VERSION)
@@ -24,7 +26,10 @@ clean:
 	rm -f BAS/src/shell.c BAS/src/sqlite3*
 	rm -f mako-*.deb mako-dev-*.deb
 	rm -rf $(TMP_DIR)
-	docker rmi mako -f
+	if [ -f $(TOP_DIR)/BAS/mako.mk.orig ]; then \
+		mv $(TOP_DIR)/BAS/mako.mk.orig $(TOP_DIR)/BAS/mako.mk ; \
+	fi
+	# docker rmi mako -f
 
 dist-clean:
 	docker rmi mako mako:${VERSION_MAKO}
@@ -61,7 +66,22 @@ mako-deb-dev: ${TMP_DIR}
 mako: $(MAKO) $(MAKO_ZIP)
 
 $(MAKO) $(MAKO_ZIP):
+	if [ "$(USE_OPCUA)" -eq 0 ]; then \
+	  if [ ! -f $(TOP_DIR)/BAS/mako.mk.orig ]; then \
+			cp $(TOP_DIR)/BAS/mako.mk $(TOP_DIR)/BAS/mako.mk.orig ; \
+	  fi ; \
+		sed 's/-DUSE_OPCUA=1/-DUSE_OPCUA=0/g' $(TOP_DIR)/BAS/mako.mk.orig > $(TOP_DIR)/BAS/mako.mk ; \
+	else \
+		if [ -f $(TOP_DIR)/BAS/mako.mk.orig ]; then \
+			mv $(TOP_DIR)/BAS/mako.mk.orig $(TOP_DIR)/BAS/mako.mk ; \
+		fi ; \
+	fi
+
 	./LinuxBuild.sh
+
+	if [ "$(USE_OPCUA)" -eq 0 ]; then \
+		zip -d $(MAKO_ZIP) '.lua/opcua/*' ; \
+	fi
 
 dist-docker: $(MAKO) $(MAKO_ZIP)
 	docker build -t mako -t mako:${VERSION_MAKO} -f Dockerfile ./BAS/
