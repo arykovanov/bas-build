@@ -15,7 +15,7 @@ all: $(MAKO) $(MAKO_ZIP)
 $(TMP_DIR):
 	mkdir $(TMP_DIR)
 
-dist: mako-docker
+dist: mako-docker dist-deb
 
 clean:
 	rm -f $(MAKO) $(MAKO_ZIP)
