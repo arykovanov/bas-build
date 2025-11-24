@@ -4,15 +4,16 @@ MAKO=BAS/mako
 MAKO_ZIP=BAS/mako.zip
 VERSION=$(shell cat VERSION)
 VERSION_MAKO=$(shell grep '^#define MAKO_VER' BAS/examples/MakoServer/src/MakoVer.h | awk '{print $$3}' | tr -d '"')
+LIBMAKO_STATIC_MODULE=$(TOP_DIR)/BAS/libmako.a
 
 makefile_path = $(abspath $(lastword $(MAKEFILE_LIST)))
 TOP_DIR=$(patsubst %/,%,$(dir $(makefile_path)))
 TMP_DIR=${TOP_DIR}/.tmp
 
 
-.PHONY: all mako mako-docker mako-docker-run mako-deb mako-deb-dev
+.PHONY: all mako mako-docker mako-docker-run mako-deb mako-deb-dev libmako
 
-all: $(MAKO) $(MAKO_ZIP) libmako
+all: $(MAKO) $(MAKO_ZIP) $(LIBMAKO_STATIC_MODULE)
 
 $(TMP_DIR):
 	mkdir $(TMP_DIR)
@@ -69,12 +70,10 @@ mako-deb-dev: ${TMP_DIR} libmako
 
 mako: $(MAKO) $(MAKO_ZIP)
 
-.PHONY: libmako
-LIBMAKO_OBJECTS=$(wildcard $(TOP_DIR)/BAS/*.o)
-LIBMAKO_STATIC_MODULE=$(TOP_DIR)/BAS/libmako.a
 
-$(LIBMAKO_STATIC_MODULE): $(LIBMAKO_OBJECTS) mako
-	$(AR) rcs $(LIBMAKO_STATIC_MODULE) $(LIBMAKO_OBJECTS)
+$(LIBMAKO_STATIC_MODULE): $(MAKO)
+	ls $(TOP_DIR)/BAS/*.o -Al > /dev/null
+	$(AR) rcs $(LIBMAKO_STATIC_MODULE) $(TOP_DIR)/BAS/*.o
 
 libmako: $(LIBMAKO_STATIC_MODULE)
 
