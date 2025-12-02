@@ -1,4 +1,5 @@
-USE_OPCUA ?= 0
+USE_OPCUA?=0
+DEBUG?=0
 
 MAKO=BAS/mako
 MAKO_ZIP=BAS/mako.zip
@@ -22,7 +23,8 @@ dist: mako-docker dist-deb
 
 clean:
 	rm -f $(MAKO) $(MAKO_ZIP)
-	rm -f BAS/*.o
+	make -C BAS clean -f mako.mk
+	rm -f BAS/libmako.a
 	rm -f BAS/examples/MakoServer/src/NewEncryptionKey.h
 	rm -f BAS/src/shell.c BAS/src/sqlite3*
 	rm -f mako-*.deb mako-dev-*.deb
@@ -78,18 +80,7 @@ $(LIBMAKO_STATIC_MODULE): $(MAKO)
 libmako: $(LIBMAKO_STATIC_MODULE)
 
 $(MAKO) $(MAKO_ZIP):
-	if [ "$(USE_OPCUA)" -eq 0 ]; then \
-	  if [ ! -f $(TOP_DIR)/BAS/mako.mk.orig ]; then \
-			cp $(TOP_DIR)/BAS/mako.mk $(TOP_DIR)/BAS/mako.mk.orig ; \
-	  fi ; \
-		sed 's/-DUSE_OPCUA=1/-DUSE_OPCUA=0/g' $(TOP_DIR)/BAS/mako.mk.orig > $(TOP_DIR)/BAS/mako.mk ; \
-	else \
-		if [ -f $(TOP_DIR)/BAS/mako.mk.orig ]; then \
-			mv $(TOP_DIR)/BAS/mako.mk.orig $(TOP_DIR)/BAS/mako.mk ; \
-		fi ; \
-	fi
-
-	CFLAGS="-fPIC" ./LinuxBuild.sh
+	CFLAGS="-fPIC" USE_OPCUA=${USE_OPCUA} DEBUG=${DEBUG} echo "n" | ${MAKE} -C BAS -f mako.mk
 
 	if [ "$(USE_OPCUA)" -eq 0 ]; then \
 		zip -d $(MAKO_ZIP) '.lua/opcua/*' ; \
