@@ -29,10 +29,7 @@ clean:
 	rm -f BAS/src/shell.c BAS/src/sqlite3*
 	rm -f mako-*.deb mako-dev-*.deb
 	rm -rf $(TMP_DIR)
-	if [ -f $(TOP_DIR)/BAS/mako.mk.orig ]; then \
-		mv $(TOP_DIR)/BAS/mako.mk.orig $(TOP_DIR)/BAS/mako.mk ; \
-	fi
-	# docker rmi mako -f
+	rm -rf BAS-Resources/build/mako.zip
 
 dist-clean:
 	docker rmi mako mako:${VERSION_MAKO}
@@ -80,11 +77,7 @@ $(LIBMAKO_STATIC_MODULE): $(MAKO)
 libmako: $(LIBMAKO_STATIC_MODULE)
 
 $(MAKO) $(MAKO_ZIP):
-	CFLAGS="-fPIC" USE_OPCUA=${USE_OPCUA} DEBUG=${DEBUG} echo "n" | ${MAKE} -C BAS -f mako.mk
-
-	if [ "$(USE_OPCUA)" -eq 0 ]; then \
-		zip -d $(MAKO_ZIP) '.lua/opcua/*' ; \
-	fi
+	echo "n" | CFLAGS="-fPIC" USE_OPCUA=${USE_OPCUA} DEBUG=${DEBUG} ${MAKE} -C BAS -f mako.mk
 
 dist-docker: $(MAKO) $(MAKO_ZIP)
 	docker build -t mako -t mako:${VERSION_MAKO} -f Dockerfile ./BAS/
