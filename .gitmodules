@@ -1,9 +1,9 @@
 [submodule "BAS"]
     path = BAS
-    url = https://github.com/RealTimeLogic/BAS.git
+	url = https://github.com/arykovanov/BAS.git
 [submodule "BAS-Resources"]
     path = BAS-Resources
-    url = https://github.com/RealTimeLogic/BAS-Resources.git
+	url = https://github.com/arykovanov/BAS-Resources.git
 [submodule "CBOR"]
 	path = CBOR
 	url = https://github.com/spc476/CBOR.git
