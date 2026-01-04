@@ -76,7 +76,12 @@ $(LIBMAKO_STATIC_MODULE): $(MAKO)
 
 libmako: $(LIBMAKO_STATIC_MODULE)
 
-$(MAKO) $(MAKO_ZIP):
+BAS/src/sqlite3.c:
+	cp -f $(TOP_DIR)/sqlite/sqlite3.c $(TOP_DIR)/BAS/src/sqlite3.c
+	cp -f $(TOP_DIR)/sqlite/sqlite3.h $(TOP_DIR)/BAS/src/sqlite3.h
+	cp -f $(TOP_DIR)/sqlite/sqlite3ext.h $(TOP_DIR)/BAS/src/sqlite3ext.h
+
+$(MAKO) $(MAKO_ZIP): BAS/src/sqlite3.c
 	echo "n" | CFLAGS="-fPIC" USE_OPCUA=${USE_OPCUA} DEBUG=${DEBUG} ${MAKE} -C BAS -f mako.mk
 
 dist-docker: $(MAKO) $(MAKO_ZIP)
