@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
 
   push:
-    branches: [ "*" ]
+    branches: ["*"]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: ["main", "master"]
 
 permissions:
   contents: read
@@ -42,6 +42,7 @@ jobs:
       - name: Build debian package
         run: |
           make mako-deb
+          make mako-deb-dev
 
       - name: Store build artifacts
         uses: actions/upload-artifact@v4
@@ -73,7 +74,7 @@ jobs:
             echo "DOCKER_REGISTRY_HOST empty!"
             exit 1
           fi
-          
+
           cat > "$CONFIG" <<EOF
           {
             "auths": {
