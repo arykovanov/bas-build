@@ -39,6 +39,10 @@ jobs:
         run: |
           make all
 
+      - name: Run tests
+        run: |
+          make check
+
       - name: Build debian package
         run: |
           make mako-deb

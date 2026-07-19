@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug current Lua file (Mako)",
+            "type": "lua",
+            "request": "launch",
+            "luaexe": "${workspaceFolder}/BAS/mako",
+            "program": "${file}",
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false,
+            "stopOnThreadEntry": false
+        }
+    ]
+}

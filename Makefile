@@ -12,7 +12,7 @@ TOP_DIR=$(patsubst %/,%,$(dir $(makefile_path)))
 TMP_DIR=${TOP_DIR}/.tmp
 
 
-.PHONY: all mako mako-docker mako-docker-run mako-deb mako-deb-dev libmako
+.PHONY: all mako mako-docker mako-docker-run mako-deb mako-deb-dev libmako check
 
 all: $(MAKO) $(MAKO_ZIP) $(LIBMAKO_STATIC_MODULE)
 
@@ -96,3 +96,6 @@ mako-docker-run: mako-docker
 
 mako-version:
 	@echo ${VERSION_MAKO}
+
+check: mako
+	python3 -m unittest discover -s tests
