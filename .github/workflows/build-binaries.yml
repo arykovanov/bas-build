@@ -58,6 +58,15 @@ jobs:
             BAS/mako.zip
             mako-*.deb
 
+      - name: Create GitHub Release
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.meta.outputs.mako_version }}
+          name: Mako v${{ steps.meta.outputs.mako_version }}
+          files: mako-*.deb
+          generate_release_notes: true
+
       - name: Prepare registry auth for Kaniko
         run: |
           mkdir -p "${RUNNER_TEMP}/kaniko"
