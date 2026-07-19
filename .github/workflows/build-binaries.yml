@@ -31,9 +31,12 @@ jobs:
         run: |
           SHA_TAG=${GITHUB_SHA::7}
           VERSION=$(make mako-version)
+          BUILD_NUMBER=.$(date +%Y%m%d)
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
           echo "MAKO_VERSION=$VERSION"
           echo "sha_tag=$SHA_TAG" >> "$GITHUB_OUTPUT"
           echo "mako_version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "package_version=${VERSION}${BUILD_NUMBER}" >> "$GITHUB_OUTPUT"
 
       - name: Build binaries
         run: |
@@ -62,8 +65,8 @@ jobs:
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.meta.outputs.mako_version }}
-          name: Mako v${{ steps.meta.outputs.mako_version }}
+          tag_name: v${{ steps.meta.outputs.package_version }}
+          name: Mako v${{ steps.meta.outputs.package_version }}
           files: mako-*.deb
           generate_release_notes: true
 
@@ -121,13 +124,11 @@ jobs:
             exit 1
           fi
 
-          IMAGE="${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_PROJECT}/${DOCKER_IMAGE_NAME}:${{ steps.meta.outputs.mako_version }}"
-          if [[ "${{ steps.meta.branch }}" != "main" ]]; then
-            # branch is not main, add sha tag
-            IMAGE="${IMAGE}-${{ steps.meta.outputs.sha_tag }}"
-            DESTS="--destination ${IMAGE}"
-          else
-            DESTS="--destination ${IMAGE} --destination ${IMAGE}-${{ steps.meta.outputs.sha_tag }}"
+          IMAGE="${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_PROJECT}/${DOCKER_IMAGE_NAME}:${{ steps.meta.outputs.package_version }}"
+          DESTS="--destination ${IMAGE}"
+          if [[ "${GITHUB_REF}" == "refs/heads/main" ]]; then
+            BASE_IMAGE="${DOCKER_REGISTRY_HOST}/${DOCKER_REGISTRY_PROJECT}/${DOCKER_IMAGE_NAME}:${{ steps.meta.outputs.mako_version }}"
+            DESTS="${DESTS} --destination ${BASE_IMAGE}"
           fi
 
           echo "dests=$DESTS" >> "$GITHUB_OUTPUT"
