@@ -9,6 +9,14 @@ BUILD_NUMBER ?=
 PACKAGE_VERSION = $(VERSION_MAKO)$(BUILD_NUMBER)
 LIBMAKO_STATIC_MODULE=$(TOP_DIR)/BAS/libmako.a
 
+ifdef OPCUA_ROOT
+OPCUA_BUILD_SOURCES = \
+	$(OPCUA_ROOT)/opcua_packed.c \
+	$(OPCUA_ROOT)/opcua_packed.h \
+	$(OPCUA_ROOT)/opcua_ns0.c \
+	$(OPCUA_ROOT)/opcua_ns0.h
+endif
+
 makefile_path = $(abspath $(lastword $(MAKEFILE_LIST)))
 TOP_DIR=$(patsubst %/,%,$(dir $(makefile_path)))
 TMP_DIR=${TOP_DIR}/.tmp
@@ -86,6 +94,8 @@ BAS/src/sqlite3.c:
 
 $(MAKO) $(MAKO_ZIP): BAS/src/sqlite3.c
 	echo "n" | CFLAGS="-fPIC" USE_OPCUA=${USE_OPCUA} DEBUG=${DEBUG} ${MAKE} -C BAS -f mako.mk
+
+$(MAKO): $(OPCUA_BUILD_SOURCES)
 
 dist-docker: Dockerfile ${MAKO} $(MAKO_ZIP)
 	docker build -t mako -t mako:${PACKAGE_VERSION} -f Dockerfile ./BAS/
