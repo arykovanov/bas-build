@@ -31,7 +31,7 @@ jobs:
         run: |
           SHA_TAG=${GITHUB_SHA::7}
           VERSION=$(make mako-version)
-          BUILD_NUMBER=.$(date +%Y%m%d)
+          BUILD_NUMBER=.${GITHUB_RUN_NUMBER}
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
           echo "MAKO_VERSION=$VERSION"
           echo "sha_tag=$SHA_TAG" >> "$GITHUB_OUTPUT"
@@ -46,10 +46,14 @@ jobs:
         run: |
           make check
 
-      - name: Build debian package
+      - name: Build Debian packages
         run: |
-          make mako-deb
-          make mako-deb-dev
+          make dist-deb
+
+      - name: Verify Debian packages
+        run: |
+          test -f "mako-${{ steps.meta.outputs.package_version }}.deb"
+          test -f "mako-dev-${{ steps.meta.outputs.package_version }}.deb"
 
       - name: Store build artifacts
         uses: actions/upload-artifact@v4
@@ -59,16 +63,8 @@ jobs:
           path: |
             BAS/mako
             BAS/mako.zip
-            mako-*.deb
-
-      - name: Create GitHub Release
-        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.meta.outputs.package_version }}
-          name: Mako v${{ steps.meta.outputs.package_version }}
-          files: mako-*.deb
-          generate_release_notes: true
+            mako-${{ steps.meta.outputs.package_version }}.deb
+            mako-dev-${{ steps.meta.outputs.package_version }}.deb
 
       - name: Prepare registry auth for Kaniko
         run: |
@@ -171,6 +167,39 @@ jobs:
             --cache-ttl 168h \
             --cache-repo "${{ steps.dest.outputs.cache_repo }}" \
             ${{ steps.dest.outputs.dests }}
+
+      - name: Create GitHub Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.meta.outputs.package_version }}
+          name: Mako v${{ steps.meta.outputs.package_version }}
+          body: |
+            ## Debian packages
+
+            - `mako-${{ steps.meta.outputs.package_version }}.deb`
+            - `mako-dev-${{ steps.meta.outputs.package_version }}.deb`
+
+            ## Docker image
+
+            Immutable build:
+
+            ```console
+            docker pull ${{ vars.DOCKER_REGISTRY_HOST }}/${{ vars.DOCKER_REGISTRY_PROJECT }}/${{ vars.DOCKER_IMAGE_NAME }}:${{ steps.meta.outputs.package_version }}
+            ```
+
+            Rolling Mako ${{ steps.meta.outputs.mako_version }} alias:
+
+            ```console
+            docker pull ${{ vars.DOCKER_REGISTRY_HOST }}/${{ vars.DOCKER_REGISTRY_PROJECT }}/${{ vars.DOCKER_IMAGE_NAME }}:${{ steps.meta.outputs.mako_version }}
+            ```
+          files: |
+            mako-${{ steps.meta.outputs.package_version }}.deb
+            mako-dev-${{ steps.meta.outputs.package_version }}.deb
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Summary
         if: always()
