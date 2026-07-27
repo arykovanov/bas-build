@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/bin/sh
+set -e
 
-systemctl disable mako-server
-systemctl stop mako-server
+if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+    systemctl disable --now mako-server
+fi

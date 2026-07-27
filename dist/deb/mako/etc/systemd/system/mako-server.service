@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 Restart=always
-ExecStart=/usr/lib/realtimelogic/mako -c /etc/realtimelogic/mako.conf
+ExecStart=/usr/bin/mako -c /etc/realtimelogic/mako.conf
 
 [Install]
 WantedBy=multi-user.target

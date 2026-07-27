@@ -1,11 +1,14 @@
-#!/bin/bash
-# To make the postinst step optional, check for an environment variable
-# and only execute if it's not set to "skip" or similar.
-# The installing user can set DEB_SKIP_POSTINST=1 to skip postinst actions.
-if [ "$MAKO_SKIP_POSTINST" = "1" ]; then
-    echo "Skipping mako-server post-install steps due to DEB_SKIP_POSTINST=1"
+#!/bin/sh
+set -e
+
+if [ "${MAKO_SKIP_POSTINST:-}" = "1" ]; then
+    echo "Skipping mako-server post-install steps due to MAKO_SKIP_POSTINST=1"
     exit 0
 fi
 
-systemctl enable mako-server
-systemctl start mako-server
+if ! command -v systemctl >/dev/null 2>&1 || [ ! -d /run/systemd/system ]; then
+    echo "Skipping mako-server startup because systemd is not running"
+    exit 0
+fi
+
+systemctl enable --now mako-server
