@@ -1,14 +1,43 @@
 #!/bin/sh
 set -e
 
-if [ "${MAKO_SKIP_POSTINST:-}" = "1" ]; then
-    echo "Skipping mako-server post-install steps due to MAKO_SKIP_POSTINST=1"
+if [ "$1" != "configure" ]; then
     exit 0
 fi
 
-if ! command -v systemctl >/dev/null 2>&1 || [ ! -d /run/systemd/system ]; then
-    echo "Skipping mako-server startup because systemd is not running"
+. /usr/share/debconf/confmodule
+db_get mako/start-service
+start_service="$RET"
+db_stop
+
+# Do not alter users or services when dpkg operates on an alternate root.
+if [ -n "${DPKG_ROOT:-}" ]; then
     exit 0
 fi
 
-systemctl enable --now mako-server
+if [ "$start_service" = "true" ]; then
+    if ! getent passwd mako >/dev/null; then
+        adduser --system --group --home /var/lib/mako --no-create-home \
+            --disabled-login --gecos "Mako Server" mako
+    fi
+fi
+
+if [ "$start_service" = "true" ]; then
+    deb-systemd-helper enable mako-server.service >/dev/null || true
+else
+    deb-systemd-helper disable mako-server.service >/dev/null || true
+fi
+
+if [ -d /run/systemd/system ]; then
+    systemctl --system daemon-reload >/dev/null || true
+
+    if [ "$start_service" = "true" ]; then
+        if [ -n "${2:-}" ]; then
+            deb-systemd-invoke try-restart mako-server.service >/dev/null || true
+        else
+            deb-systemd-invoke start mako-server.service >/dev/null || true
+        fi
+    else
+        deb-systemd-invoke stop mako-server.service >/dev/null || true
+    fi
+fi

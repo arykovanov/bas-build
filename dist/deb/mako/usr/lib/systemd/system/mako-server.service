@@ -1,0 +1,20 @@
+[Unit]
+Description=Mako application server
+After=network.target
+
+[Service]
+Type=simple
+User=mako
+Group=mako
+StateDirectory=mako
+WorkingDirectory=/var/lib/mako
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+Restart=on-failure
+ExecStart=/usr/bin/mako -c /etc/realtimelogic/mako/server.conf
+
+[Install]
+WantedBy=multi-user.target

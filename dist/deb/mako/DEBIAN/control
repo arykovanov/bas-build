@@ -1,10 +1,14 @@
 Package: mako
-Architecture: amd64
-Essential: no
+Version: @PACKAGE_VERSION@
+Section: web
 Priority: optional
-Depends:
+Architecture: @DEB_HOST_ARCH@
+Depends: adduser, debconf (>= 0.5) | debconf-2.0, libc6
+Provides: mako-lua-abi-@LUA_VERSION@ (= @LUA_VERSION@)
+Installed-Size: @INSTALLED_SIZE@
 Maintainer: Alexander Rykovanov <alexander@realtimelogic.com>
-Description: Mako web server in LUA
- Runtime package containing the Mako server executable, configuration files,
- and systemd service.
-
+Homepage: https://makoserver.net/
+Description: embedded web server with a Lua runtime
+ Mako is an application server that embeds Lua and loads Lua applications and
+ native modules from configurable paths. This package includes the runtime,
+ its matching resource archive, and an optional unprivileged systemd service.

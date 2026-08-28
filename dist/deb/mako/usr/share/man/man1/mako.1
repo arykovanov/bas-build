@@ -1,0 +1,147 @@
+.TH MAKO 1 "27 August 2026" "Mako @PACKAGE_VERSION@" "User Commands"
+.SH NAME
+mako \- application server and Lua interpreter
+.SH SYNOPSIS
+.B mako
+.RI [ server-option ...]
+.br
+.B mako
+.RI [ lua-option ...]
+.RI [ script.lua
+.RI [ argument ...]]
+.SH DESCRIPTION
+.B mako
+is an application server with an embedded Lua runtime.
+It can load server applications from directories or ZIP archives, or execute
+Lua statements and scripts in a Lua-compatible command-line mode.
+.PP
+The Debian package runs the optional
+.B mako-server.service
+as the unprivileged
+.B mako
+system user. During package configuration, Debconf asks whether to enable and
+start the service. The default is not to start it. Run
+.B dpkg-reconfigure mako
+to change the selection later.
+.SH SERVER OPTIONS
+.TP
+.BI \-c " configfile"
+Load the specified server configuration file.
+.TP
+.BI \-l [name]:[priority]:app
+Load a server application. The optional name and numeric priority precede the
+application path and are separated by colons. This option may be specified
+more than once.
+.TP
+.B \-d
+Run in daemon mode and detach from the controlling terminal.
+.TP
+.B \-s
+Run in daemon mode without detaching. This form is suitable for a service
+manager such as systemd.
+.TP
+.BI \-u " username"
+Change to the specified user after opening the configured listening ports.
+This option normally requires Mako to be started with sufficient privileges.
+The packaged systemd services instead use the systemd
+.B User=
+directive and do not start Mako as root.
+.TP
+.BR \-h , " " \-?
+Display a short usage message and exit.
+.SH LUA OPTIONS
+Lua mode is selected by a file name ending in
+.BR .lua ,
+by standard Lua-style options, or by a script following
+.BR \-\- .
+.TP
+.BI \-e " statement"
+Execute the Lua statement.
+.TP
+.BI \-l " module"
+Require the Lua module before executing a script or entering interactive mode.
+The joined form
+.BI \-l module
+is also accepted. Unlike the server application option, this form contains no
+colon.
+.TP
+.B \-i
+Enter the interactive interpreter after processing other Lua options and any
+script.
+.TP
+.B \-v
+Print the embedded Lua version.
+.TP
+.B \-E
+Recognize the Lua option for command-line compatibility and ignore it while
+processing the command line.
+.TP
+.B \-\-
+Stop processing options. The following argument is treated as the script.
+.TP
+.B \-
+Read the Lua script from standard input.
+.PP
+Arguments following a script are available through the Lua global
+.BR arg .
+The script name is stored in
+.BR arg[0] .
+.SH ENVIRONMENT
+.TP
+.B LUA_PATH_@LUA_VERSION_ENV@
+Versioned search path for Lua source modules. If neither this variable nor
+.B LUA_PATH
+is set, the Debian wrapper supplies
+.BR /usr/share/mako/modules/@LUA_VERSION@/?.lua
+and
+.BR /usr/share/mako/modules/@LUA_VERSION@/?/init.lua ,
+followed by equivalent paths in the current directory.
+.TP
+.B LUA_CPATH_@LUA_VERSION_ENV@
+Versioned search path for native Lua modules. If neither this variable nor
+.B LUA_CPATH
+is set, the Debian wrapper supplies
+.BR /usr/lib/@DEB_HOST_MULTIARCH@/mako/modules/@LUA_VERSION@/?.so
+followed by the current directory.
+.SH FILES
+.TP
+.B /etc/realtimelogic/mako/server.conf
+Configuration for the optional generic Mako service.
+.TP
+.B /usr/share/mako/modules/@LUA_VERSION@/
+Package-managed Lua source modules for Mako's embedded Lua ABI.
+.TP
+.B /usr/lib/@DEB_HOST_MULTIARCH@/mako/modules/@LUA_VERSION@/
+Package-managed native modules for Mako's embedded Lua ABI.
+.TP
+.B /usr/lib/realtimelogic/mako/
+Private Mako executable and matching resource archive.
+.SH EXAMPLES
+Run a Lua script and pass two arguments:
+.PP
+.nf
+    mako example.lua first second
+.fi
+.PP
+Execute a Lua statement:
+.PP
+.nf
+    mako -e 'print(_VERSION)'
+.fi
+.PP
+Start a server with a configuration and an application archive:
+.PP
+.nf
+    mako -c server.conf -l::application.zip
+.fi
+.SH EXIT STATUS
+Lua mode exits with status zero after successful execution and with a nonzero
+status when loading or executing a statement, module, or script fails.
+Server mode returns a nonzero status when initialization or configuration
+fails.
+.SH SEE ALSO
+.BR systemctl (1),
+.BR systemd.service (5),
+.BR lua (1)
+.SH AUTHOR
+Mako Server is developed by Real Time Logic LLC.

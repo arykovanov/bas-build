@@ -1,0 +1,7 @@
+Template: mako/start-service
+Type: boolean
+Default: false
+Description: Start Mako as a system service?
+ Mako can run continuously as an unprivileged system service and listen on
+ the ports configured in /etc/realtimelogic/mako/server.conf. Choose this
+ option to enable and start the service now.

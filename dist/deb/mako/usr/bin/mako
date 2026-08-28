@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+# Mako embeds its own Lua runtime. Use package-private module directories by
+# default while preserving caller-provided versioned or unversioned paths.
+if [ -z "${LUA_PATH_@LUA_VERSION_ENV@+x}" ] && [ -z "${LUA_PATH+x}" ]; then
+    LUA_PATH_@LUA_VERSION_ENV@='/usr/share/mako/modules/@LUA_VERSION@/?.lua;/usr/share/mako/modules/@LUA_VERSION@/?/init.lua;./?.lua;./?/init.lua'
+    export LUA_PATH_@LUA_VERSION_ENV@
+fi
+
+if [ -z "${LUA_CPATH_@LUA_VERSION_ENV@+x}" ] && [ -z "${LUA_CPATH+x}" ]; then
+    LUA_CPATH_@LUA_VERSION_ENV@='/usr/lib/@DEB_HOST_MULTIARCH@/mako/modules/@LUA_VERSION@/?.so;./?.so'
+    export LUA_CPATH_@LUA_VERSION_ENV@
+fi
+
+exec /usr/lib/realtimelogic/mako/mako "$@"

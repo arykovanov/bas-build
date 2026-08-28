@@ -1,0 +1,6 @@
+mako (@PACKAGE_VERSION@) unstable; urgency=medium
+
+  * Package the Mako runtime and development files for Debian systems.
+  * Ask before enabling and starting the optional unprivileged Mako service.
+
+ -- Alexander Rykovanov <alexander@realtimelogic.com>  Thu, 27 Aug 2026 13:14:10 +0400

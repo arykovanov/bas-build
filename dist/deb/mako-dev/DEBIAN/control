@@ -1,10 +1,12 @@
 Package: mako-dev
-Architecture: amd64
-Essential: no
+Version: @PACKAGE_VERSION@
+Section: libdevel
 Priority: optional
-Depends: mako (= ${binary:Version})
+Architecture: @DEB_HOST_ARCH@
+Depends: mako (= @PACKAGE_VERSION@)
+Installed-Size: @INSTALLED_SIZE@
 Maintainer: Alexander Rykovanov <alexander@realtimelogic.com>
-Description: Mako web server development files
- Development package containing header files and pkgconfig for compiling
- Lua modules that use Mako's headers.
-
+Homepage: https://makoserver.net/
+Description: development files for the Mako application server
+ This package contains the headers, static library, and pkg-config metadata
+ needed to compile native modules for the matching Mako runtime.

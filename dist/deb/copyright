@@ -1,0 +1,11 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Mako Server
+Source: https://makoserver.net/
+
+Files: *
+Copyright: 2012-2025 Real Time Logic LLC
+License: GPL-2
+ This program is distributed under the GNU General Public License version 2.
+ .
+ On Debian systems, the complete text of the GNU General Public License
+ version 2 is available in /usr/share/common-licenses/GPL-2.
