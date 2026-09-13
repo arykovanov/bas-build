@@ -1,4 +1,4 @@
-# Reposotory for packagging Bassacuda server.
+# Reposotory for packagging Barracuda web server.
 
 Types of packages:
 
