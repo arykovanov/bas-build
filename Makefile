@@ -1,5 +1,13 @@
-USE_OPCUA?=0
+BA_ENABLE_LUA_OPCUA?=0
+export BA_ENABLE_LUA_OPCUA
 DEBUG?=0
+.DEFAULT_GOAL := all
+OPCUA_PROFILE?=full
+export OPCUA_PROFILE
+
+# Capture this Makefile's directory before including other makefiles.
+makefile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+TOP_DIR := $(patsubst %/,%,$(dir $(makefile_path)))
 
 MAKO=BAS/mako
 MAKO_ZIP=BAS/mako.zip
@@ -17,16 +25,26 @@ BUILD_NUMBER ?=
 PACKAGE_VERSION = $(VERSION_MAKO)$(BUILD_NUMBER)
 LIBMAKO_STATIC_MODULE=$(TOP_DIR)/BAS/libmako.a
 
+ifneq ($(filter 1 2,$(BA_ENABLE_LUA_OPCUA)),)
 ifdef OPCUA_ROOT
+override OPCUA_ROOT := $(abspath $(OPCUA_ROOT))
+export OPCUA_ROOT
+include $(OPCUA_ROOT)/opcua_profile.mk
 OPCUA_BUILD_SOURCES = \
 	$(OPCUA_ROOT)/opcua_packed.c \
 	$(OPCUA_ROOT)/opcua_packed.h \
-	$(OPCUA_ROOT)/opcua_ns0.c \
-	$(OPCUA_ROOT)/opcua_ns0.h
+	$(OPCUA_ROOT)/opcua_profile.mk
+else
+ifneq ($(OPCUA_PROFILE),full)
+$(error OPCUA_PROFILE=$(OPCUA_PROFILE) requires OPCUA_ROOT; the embedded model uses full)
+endif
+endif
 endif
 
-makefile_path = $(abspath $(lastword $(MAKEFILE_LIST)))
-TOP_DIR=$(patsubst %/,%,$(dir $(makefile_path)))
+# Recheck the selected mode even when artifacts from another mode exist.
+.PHONY: _force_opcua_build
+$(MAKO) $(MAKO_ZIP): _force_opcua_build
+
 TMP_DIR=${TOP_DIR}/.tmp
 
 
@@ -152,10 +170,8 @@ BAS/src/sqlite3.c:
 	cp -f $(TOP_DIR)/sqlite/sqlite3.h $(TOP_DIR)/BAS/src/sqlite3.h
 	cp -f $(TOP_DIR)/sqlite/sqlite3ext.h $(TOP_DIR)/BAS/src/sqlite3ext.h
 
-$(MAKO) $(MAKO_ZIP): BAS/src/sqlite3.c
-	echo "n" | CFLAGS="-fPIC" USE_OPCUA=${USE_OPCUA} DEBUG=${DEBUG} ${MAKE} -C BAS -f mako.mk
-
-$(MAKO): $(OPCUA_BUILD_SOURCES)
+$(MAKO) $(MAKO_ZIP) &: BAS/src/sqlite3.c $(OPCUA_BUILD_SOURCES)
+	echo "n" | CFLAGS="-fPIC" BA_ENABLE_LUA_OPCUA=${BA_ENABLE_LUA_OPCUA} DEBUG=${DEBUG} ${MAKE} -C BAS -f mako.mk
 
 dist-docker: Dockerfile ${MAKO} $(MAKO_ZIP)
 	docker build -t mako -t mako:${PACKAGE_VERSION} -f Dockerfile ./BAS/
